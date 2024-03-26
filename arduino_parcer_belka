@@ -1,0 +1,76 @@
+String string_convert = "";
+bool start_parce=false;
+bool good_packet=false;
+int index;
+unsigned char data[16];
+
+
+typedef uint16_t ui16;
+typedef uint8_t ui8;
+
+ui16 crc16;
+
+ui16 SerialAPI_CRC16_Calculate (ui8 *data, ui16 length){
+ ui16 CRC_Register = 0; ui8 shiftRegister,
+  dataBit,  CRC_Bit;
+ for (ui16 i = 0; i < length; i++)
+ {  for (shiftRegister = 1; shiftRegister > 0; shiftRegister <<= 1)
+  {   dataBit = (data[i] & shiftRegister) ? 1 : 0;
+   CRC_Bit = CRC_Register >> 15;   CRC_Register <<= 1;
+   if (dataBit != CRC_Bit)
+    CRC_Register ^= 0x1021;  }
+ }
+ return CRC_Register;}
+
+
+ui16 crc16_custom (ui8 *data, ui16 length1){
+   ui16 crc = 0xFFFF;
+    for (int i=0; i<length1; i++){
+        crc ^= data[i] << 8;
+        for (int j=0; j<8;j++){
+            if ((crc & 0x8000) > 0)
+                crc =(crc << 1) ^ 0x1021;
+            else
+                crc = crc << 1;}}
+    return crc & 0xFFFF;
+}
+
+void setup() {
+  Serial.begin(115200);
+  Serial3.begin(57600);
+
+}
+
+
+void loop() {
+
+  if (Serial3.available() >= 19)
+  {
+    //Serial.println(index);
+    unsigned char incomingByte = Serial3.read();
+
+    if (incomingByte == 255)
+    {
+       for(int i = 0; i < 16; i++)
+         data[i] = Serial3.read();
+
+         crc16 = Serial3.read();
+         crc16 |= ((Serial3.read() << 8) & 0xFF00);
+ 
+        if (crc16_custom(data, 16) == crc16)
+        {
+          for(int i = 0; i < 16; i++)
+          {
+            Serial.print(data[i]);
+            Serial.print(" ");
+          }
+
+          //crc16 = crc16_custom(data, 16);
+
+         //Serial.println(crc16 & 0x00FF);
+         //Serial.println((crc16 & 0xFF00) >> 8);
+          Serial.println(" ");
+        }
+    }
+  }
+}
